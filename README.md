@@ -159,3 +159,31 @@ terraform destroy -var-file=terraform.tfvars
 
 ---
 Need adjustments or want to extend the template (e.g., private networking, multi-account deployment)? Feel free to open an issue or adapt the modules as needed.
+
+## Trivial Demo App (React + Vite + Express)
+
+A lightweight sample service now lives alongside the Terraform code to serve as an easy smoke-test target. It contains a TypeScript Express API (`backend/`) plus a React + Vite dashboard (`frontend/`) that calls three demo endpoints.
+
+### Backend (`backend/`)
+
+```bash
+cd backend
+npm install
+npm run dev        # ts-node-dev on http://localhost:4000
+npm run build      # emits dist/
+npm start          # runs the compiled JS
+```
+
+Routes available: `GET /health`, `GET /test`, `GET /info`. Update `src/index.ts` to add more diagnostics.
+
+### Frontend (`frontend/`)
+
+```bash
+cd frontend
+cp .env.example .env   # optional override, defaults to http://localhost:4000
+npm install
+npm run dev            # http://localhost:5173
+npm run build          # production bundle in dist/
+```
+
+Set `VITE_API_BASE_URL` if the API lives elsewhere. The Material UI dashboard lists each endpoint with a trigger button and renders the JSON payload from the latest response.
