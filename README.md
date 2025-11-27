@@ -1,8 +1,52 @@
 # AWS Application Terraform Template
 
-A reusable Terraform template that provisions a production-style AWS stack for containerized applications. It aims to be infrastructure-agnostic, avoiding any application-specific secrets or hard-coded names so you can drop in your own workloads quickly.
+A reusable Terraform template that provisions a production-style AWS stack for containerized applications. It ships with a trivial full-stack demo (React + Vite frontend, Express + NodeJS backend) so you can exercise the infrastructure end-to-end or swap in your own workloads quickly.
 
-## What You Get
+## Reference Demo Application (React + Vite + Express)
+
+Use the sample app as a canary workload for the Terraform stack or as a starting point for your own service.
+
+### Backend (`backend/`)
+
+```bash
+cd backend
+cp .env.example .env    
+npm install
+npm run prisma:generate 
+npm run prisma:migrate  
+npm run dev             
+npm run build
+```
+
+- Production runs start via `node dist/index.js` (the Docker image below does this automatically).
+- A ready-to-use `backend/Dockerfile` builds a minimal runtime image:
+  ```bash
+  docker build -t sample-backend backend
+  docker run --env-file backend/.env -p 4000:4000 sample-backend
+  ```
+
+Key routes:
+
+- `GET /health` – Simple status check.
+- `GET /test` – Generates a random number, persists it via Prisma ORM, and returns the saved record.
+- `GET /history?limit=10` – Lists the most recent stored random numbers (max 50 per request).
+- `GET /info` – Static metadata plus database config hints.
+
+### Frontend (`frontend/`)
+
+```bash
+cd frontend
+cp .env.example .env   
+npm install
+npm run dev            
+npm run build          
+```
+
+Set `VITE_API_BASE_URL` if the API lives elsewhere. The Material UI dashboard lists each endpoint with a trigger button, and the History card lets you pull `/history` responses with a configurable limit.
+
+## Terraform Stack Overview
+
+### What You Get
 
 - **Regional AWS provider setup** with pluggable remote state backends (S3 + DynamoDB recommended).
 - **VPC with public subnets only** (see cost note below) plus an internet gateway and shared route table.
@@ -48,81 +92,23 @@ For cost-optimization, this template places **all subnets in the public network*
 The backend is left empty so you can supply your own settings at init time:
 
 ```bash
+# Init backend
 terraform init \
   -backend-config="bucket=<state-bucket>" \
   -backend-config="key=terraform.tfstate" \
   -backend-config="region=<state-region>" \
-  -backend-config="dynamodb_table=<optional-lock-table>"
-```
 
-### Variables
+# Format files
+terraform fmt
 
-Key inputs are defined in [`variables.tf`](variables.tf). Highlights:
-
-| Variable | Purpose |
-| --- | --- |
-| `aws_region`, `project_name`, `environment` | Global context used in naming/tagging |
-| `vpc_cidr`, `az_count` | Network sizing |
-| `app_port`, `app_count`, `fargate_cpu`, `fargate_memory`, `app_image_tag` | ECS service tuning |
-| `db_name`, `db_username`, `db_password`, `db_instance_class`, `db_port` | RDS config |
-| `frontend_bucket_name`, `certificate_arn`, `cloudfront_domain` | Frontend delivery settings |
-| `autoscaling_min_capacity`, `autoscaling_max_capacity`, `cpu_threshold_high`, `cpu_threshold_low` | Scaling policy knobs |
-| `app_environment_variables` | Arbitrary map of `name=value` pairs injected into the container |
-
-### Sample `terraform.tfvars`
-
-```hcl
-aws_region   = "us-east-1"
-project_name = "myapp"
-environment  = "dev"
-
-vpc_cidr = "172.17.0.0/16"
-az_count = 2
-
-app_port       = 3000
-app_count      = 2
-fargate_cpu    = 512
-fargate_memory = 1024
-app_image_tag  = "v1.0.0"
-
-frontend_bucket_name = "myapp-frontend-dev"
-certificate_arn      = "arn:aws:acm:..."
-cloudfront_domain    = "app.example.com"
-
-db_name      = "app"
-db_username  = "app_admin"
-db_password  = "super-secret"
-db_port      = 5432
-
-autoscaling_min_capacity = 1
-autoscaling_max_capacity = 4
-cpu_threshold_high       = 75
-cpu_threshold_low        = 20
-
-app_environment_variables = {
-  NODE_ENV                     = "production"
-  ENABLE_CLAUDE_OPUS_4_5_PREVIEW = "true" # Example feature toggle
-  LOG_LEVEL                    = "info"
-}
-```
-
-## Usage
-
-```bash
-# 1. Initialize (configure backend via CLI or backend.hcl)
-terraform init -backend-config=backend.hcl
-
-# 2. Validate syntax early
-terraform validate
-
-# 3. Preview changes
+# Preview changes
 terraform plan -var-file=terraform.tfvars
 
-# 4. Apply infrastructure
+# Apply infrastructure
 terraform apply -var-file=terraform.tfvars
 
-# 5. Tear down when finished
-terraform destroy -var-file=terraform.tfvars
+# Tear down when finished - Nuke everything
+terraform destroy
 ```
 
 ### ECR Image Flow
@@ -159,38 +145,3 @@ terraform destroy -var-file=terraform.tfvars
 
 ---
 Need adjustments or want to extend the template (e.g., private networking, multi-account deployment)? Feel free to open an issue or adapt the modules as needed.
-
-## Trivial Demo App (React + Vite + Express)
-
-A lightweight sample service now lives alongside the Terraform code to serve as an easy smoke-test target. It contains a TypeScript Express API (`backend/`) plus a React + Vite dashboard (`frontend/`) that calls three demo endpoints.
-
-### Backend (`backend/`)
-
-```bash
-cd backend
-cp .env.example .env   # edit DATABASE_URL for your Postgres instance
-npm install            # runs prisma generate via the prepare hook
-npm run prisma:migrate # creates the RandomResult table
-npm run dev            # ts-node-dev on http://localhost:4000
-npm run build          # emits dist/
-npm start              # runs the compiled JS
-```
-
-Key routes
-
-- `GET /health` – Simple status check.
-- `GET /test` – Generates a random number, persists it via Prisma ORM, and returns the saved record.
-- `GET /history?limit=10` – Lists the most recent stored random numbers (max 50 per request).
-- `GET /info` – Static metadata plus database config hints.
-
-### Frontend (`frontend/`)
-
-```bash
-cd frontend
-cp .env.example .env   # optional override, defaults to http://localhost:4000
-npm install
-npm run dev            # http://localhost:5173
-npm run build          # production bundle in dist/
-```
-
-Set `VITE_API_BASE_URL` if the API lives elsewhere. The Material UI dashboard lists each endpoint with a trigger button and renders the JSON payload from the latest response (including the persisted history once `/history` is wired up on the UI).

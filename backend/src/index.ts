@@ -1,6 +1,6 @@
 import cors from "cors";
 import express, { Request, Response } from "express";
-import prisma from "./prisma";
+import prisma from "./prisma.js";
 
 const app = express();
 const port = Number(process.env.PORT) || 4000;
