@@ -168,13 +168,20 @@ A lightweight sample service now lives alongside the Terraform code to serve as 
 
 ```bash
 cd backend
-npm install
-npm run dev        # ts-node-dev on http://localhost:4000
-npm run build      # emits dist/
-npm start          # runs the compiled JS
+cp .env.example .env   # edit DATABASE_URL for your Postgres instance
+npm install            # runs prisma generate via the prepare hook
+npm run prisma:migrate # creates the RandomResult table
+npm run dev            # ts-node-dev on http://localhost:4000
+npm run build          # emits dist/
+npm start              # runs the compiled JS
 ```
 
-Routes available: `GET /health`, `GET /test`, `GET /info`. Update `src/index.ts` to add more diagnostics.
+Key routes
+
+- `GET /health` – Simple status check.
+- `GET /test` – Generates a random number, persists it via Prisma ORM, and returns the saved record.
+- `GET /history?limit=10` – Lists the most recent stored random numbers (max 50 per request).
+- `GET /info` – Static metadata plus database config hints.
 
 ### Frontend (`frontend/`)
 
@@ -186,4 +193,4 @@ npm run dev            # http://localhost:5173
 npm run build          # production bundle in dist/
 ```
 
-Set `VITE_API_BASE_URL` if the API lives elsewhere. The Material UI dashboard lists each endpoint with a trigger button and renders the JSON payload from the latest response.
+Set `VITE_API_BASE_URL` if the API lives elsewhere. The Material UI dashboard lists each endpoint with a trigger button and renders the JSON payload from the latest response (including the persisted history once `/history` is wired up on the UI).

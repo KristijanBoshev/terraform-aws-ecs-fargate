@@ -7,8 +7,12 @@ import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import Container from "@mui/material/Container";
 import Divider from "@mui/material/Divider";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
 
 type Endpoint = {
   label: string;
@@ -22,16 +26,27 @@ type ApiResult = {
   error?: string;
 };
 
+type HistoryResponse = {
+  count: number;
+  results: Array<{
+    id: number;
+    value: number;
+    createdAt: string;
+  }>;
+};
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
 function App() {
   const [responses, setResponses] = useState<Record<string, ApiResult>>({});
+  const [historyLimit, setHistoryLimit] = useState(10);
 
   const endpoints = useMemo<Endpoint[]>(
     () => [
       { label: "Health", path: "/health", description: "Simple heartbeat check" },
       { label: "Test", path: "/test", description: "Returns a random number" },
       { label: "Info", path: "/info", description: "Static metadata payload" },
+      { label: "History", path: "/history", description: "View recently persisted random numbers" },
     ],
     []
   );
@@ -43,7 +58,12 @@ function App() {
     }));
 
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint.path}`);
+      const isHistory = endpoint.path === "/history";
+      const limit = historyLimit || 1;
+      const url = isHistory
+        ? `${API_BASE_URL}${endpoint.path}?limit=${limit}`
+        : `${API_BASE_URL}${endpoint.path}`;
+      const response = await fetch(url);
 
       if (!response.ok) {
         throw new Error(`Request failed with status ${response.status}`);
@@ -63,7 +83,7 @@ function App() {
         },
       }));
     }
-  }, []);
+  }, [API_BASE_URL, historyLimit]);
 
   return (
     <Container maxWidth="md" sx={{ py: 6 }}>
@@ -83,6 +103,73 @@ function App() {
         <Stack spacing={2}>
           {endpoints.map((endpoint) => {
             const result = responses[endpoint.path] ?? { status: "idle" };
+            const isHistory = endpoint.path === "/history";
+
+            if (isHistory) {
+              return (
+                <Card key={endpoint.path} variant="outlined">
+                  <CardContent>
+                    <Stack spacing={2}>
+                      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "stretch", sm: "center" }}>
+                        <Button
+                          variant="contained"
+                          onClick={() => callEndpoint(endpoint)}
+                          disabled={result.status === "loading"}
+                        >
+                          {result.status === "loading" ? "Fetching..." : endpoint.label}
+                        </Button>
+                        <Chip label={endpoint.path} variant="outlined" size="small" />
+                        <TextField
+                          type="number"
+                          label="Limit (1-50)"
+                          value={historyLimit}
+                          onChange={(event) => {
+                            setHistoryLimit(Number(event.target.value) || 1);
+                          }}
+                          inputProps={{ min: 1, max: 50 }}
+                          sx={{ width: { xs: "100%", sm: 150 } }}
+                        />
+                      </Stack>
+
+                      <Typography variant="body2" color="text.secondary">
+                        {endpoint.description}
+                      </Typography>
+
+                      {result.status === "idle" && (
+                        <Alert severity="info" variant="outlined">
+                          No history loaded yet.
+                        </Alert>
+                      )}
+
+                      {result.status === "loading" && <Alert severity="info">Retrieving saved values...</Alert>}
+
+                      {result.status === "error" && <Alert severity="error">{result.error}</Alert>}
+
+                      {result.status === "success" && (
+                        <Stack spacing={1}>
+                          <Chip
+                            label={`${(result.payload as HistoryResponse).count} records returned`}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                          />
+                          <List dense disablePadding sx={{ maxHeight: 320, overflow: "auto" }}>
+                            {(result.payload as HistoryResponse).results.map((entry) => (
+                              <ListItem key={entry.id} divider>
+                                <ListItemText
+                                  primary={`Value: ${entry.value}`}
+                                  secondary={`Saved ${new Date(entry.createdAt).toLocaleString()}`}
+                                />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Stack>
+                      )}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              );
+            }
 
             return (
               <Card key={endpoint.path} variant="outlined">
