@@ -13,7 +13,7 @@ FROM alpine:3.20 AS runner
 ARG app_user=node
 ENV NODE_ENV=production
 
-RUN apk add --no-cache nodejs \
+RUN apk add --no-cache nodejs npm \
 	&& addgroup --system --gid 1001 "$app_user" \
 	&& adduser --system --uid 1001 "$app_user" \
 	&& mkdir -p /app \
