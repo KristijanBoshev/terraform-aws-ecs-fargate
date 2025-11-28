@@ -12,12 +12,8 @@ RUN npm run build
 FROM node:23-alpine3.20 AS runner
 ENV NODE_ENV=production
 
-RUN addgroup --system --gid 1001 node \
-    && adduser --system --uid 1001 node \
-    && mkdir -p /app \
-    && chown -R node:node /app
-
 WORKDIR /app
+
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/package*.json ./
 COPY --from=builder --chown=node:node /app/prisma ./prisma
