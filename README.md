@@ -123,6 +123,28 @@ terraform destroy
 - All entries render as `name/value` pairs in the ECS task definition.
 - Sensitive values should be stored securely (e.g., `*.auto.tfvars` in a secrets backend or Terraform Cloud workspace variables).
 
+## End-to-End Usage Guide
+
+Follow the steps below to deploy the reference stack with your own domains and the bundled GitHub Actions pipelines.
+
+1. **Request ACM certificates** – In the target AWS region, request a certificate that covers both your intended frontend domain (e.g., `app.example.com`) and backend/API domain (e.g., `api.example.com`). Add the DNS validation records that AWS provides to your registrar (Porkbun, Cloudflare, Namecheap, etc.) and wait until the certificate enters the `Issued` state.
+2. **Create the Terraform backend bucket** – Manually create an S3 bucket (for example `test-app-backend`) that will store `terraform.tfstate`. Versioning and default encryption are recommended. A helper script will replace this manual step later, but for now it must be created through the AWS Console.
+3. **Prepare `terraform.tfvars`** – Copy `variables.tf` as a reference and populate every required project/environment value. Place all application-level settings inside the `app_environment_variables` map so they are injected into the ECS task:
+   ```hcl
+   app_environment_variables = {
+     DATABASE_URL = "postgresql://..."
+     NODE_ENV     = "production"
+   }
+   ```
+   Keep secrets in a secure location (local `terraform.tfvars`, `*.auto.tfvars`, or your CI/CD secrets store).
+4. **Provision or reuse an IAM user** – Ensure you have an IAM user (or role) with permissions to manage ACM, S3, ECS, ECR, RDS, CloudFront, IAM, and CloudWatch. Create long-lived access keys only if you cannot leverage SSO or short-lived credentials.
+5. **Bootstrap the ECR repository** – From the repo root run `cd scripts`, grant execute permission, and create the repository: `chmod +x bootstrap-ecr.sh && ./bootstrap-ecr.sh <ecr-name> <aws-region>`. Supply the repository name and region when prompted; the script outputs the new ECR URI for later use.
+6. **Run `deploy-backend.yaml`** – In GitHub Actions trigger the backend workflow after setting these repository secrets: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_S3_BACKEND_BUCKET`, and `ECR_REPOSITORY_NAME`. The workflow builds the backend image, pushes it to ECR, and applies the Terraform modules.
+7. **Capture Terraform outputs and wire DNS** – When `terraform apply` completes, note the following outputs: `alb_hostname`, `cloudfront_distribution_id`, `cloudfront_domain_name`, and `frontend_bucket_name`. Use the ALB hostname and CloudFront domain to create CNAME records that map your backend domain to the load balancer and your frontend domain to CloudFront. The ALB hostname may be truncated in the logs; retrieve the full value from the EC2 ➜ Load Balancers console if necessary.
+8. **Populate frontend deployment secrets** – With the CloudFront distribution and S3 bucket now created, add the following GitHub secrets: `VITE_API_BASE_URL` (your backend domain using HTTPS), `AWS_FRONTEND_BUCKET` (from Terraform output), and `AWS_CLOUDFRONT_DISTRIBUTION_ID` (from Terraform output). These power the `deploy-frontend.yaml` workflow.
+9. **Run `deploy-frontend.yaml`** – Trigger the frontend workflow to build the Vite app, sync it to the S3 bucket, and invalidate the CloudFront cache so the new assets are served immediately.
+10. **Verify the application** – Browse to your frontend domain. The UI should load from CloudFront/S3 and call the API through the DNS entry you created in step 7. Use the dashboard buttons to validate each backend route before sharing the link.
+
 ## Customization Tips
 
 - **Private networking:** Add private subnets + NAT to `network.tf`, update ECS service subnets, and create separate subnet groups for RDS if you need stricter isolation.
