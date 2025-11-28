@@ -63,7 +63,7 @@ Use these Terraform-oriented steps to stand up infrastructure for any containeri
    }
    ```
 4. **Provision IAM access** – Use an IAM role or user with rights over ACM, S3, ECS, ECR, RDS, CloudFront, IAM, and CloudWatch. Prefer SSO/short-lived credentials when possible.
-5. **Bootstrap the ECR repository** – From the repo root run `cd scripts && chmod +x bootstrap-ecr.sh && ./bootstrap-ecr.sh <ecr-name> <aws-region>` to create the repo and capture its URI.
+5. **Bootstrap the ECR repository** – From the repo root run `cd scripts && chmod +x bootstrap-ecr.sh && ./bootstrap-ecr.sh <ecr-name> <aws-region>` to create the repo and capture its URI. NOTE: You need to be logged in inside your AWS account. Use `aws configure`
 6. **Wire up CI secrets** – Populate GitHub (or your CI) with `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_S3_BACKEND_BUCKET`, and `ECR_REPOSITORY_NAME` for the backend workflow. Add frontend secrets (`VITE_API_BASE_URL`, `AWS_FRONTEND_BUCKET`, `AWS_CLOUDFRONT_DISTRIBUTION_ID`) after Terraform outputs exist.
 7. **Run Terraform pipelines** – Trigger `deploy-backend.yaml` to build/push your container, then run `terraform init/plan/apply` (locally or via CI) against the stack.
 8. **Capture outputs & configure DNS** – Note `alb_hostname`, `cloudfront_distribution_id`, `cloudfront_domain_name`, and `frontend_bucket_name`. Create DNS CNAMEs pointing backend ➜ ALB and frontend ➜ CloudFront. Use the EC2 console if the ALB hostname was truncated in logs.
