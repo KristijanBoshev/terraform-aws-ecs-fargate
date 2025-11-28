@@ -20,14 +20,6 @@
       }
     ],
     "environment": [
-      {
-        "name": "PORT",
-        "value": ${jsonencode(tostring(app_port))}
-      },
-      {
-        "name": "DATABASE_URL",
-        "value": ${jsonencode(format("postgres://%s:%s@%s:%d/%s", db_username, db_password, db_host, db_port, db_name))}
-      }
 %{ for key, value in environment_variables ~}
       ,{
         "name": "${key}",
