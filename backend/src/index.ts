@@ -5,7 +5,11 @@ import prisma from "./prisma.js";
 const app = express();
 const port = Number(process.env.PORT) || 4000;
 
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json());
 
 app.get("/health", (_req: Request, res: Response) => {
