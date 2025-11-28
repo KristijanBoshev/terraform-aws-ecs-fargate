@@ -3,6 +3,11 @@ variable "aws_region" {
   type        = string
 }
 
+variable "ecr_repository_name" {
+  description = "AWS ECR repository name"
+  type        = string
+}
+
 variable "project_name" {
   description = "Project identifier used for tagged resource names"
   type        = string

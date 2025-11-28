@@ -20,6 +20,10 @@
       }
     ],
     "environment": [
+      {
+        "name": "DATABASE_URL",
+        "value": "postgresql://${db_username}:${db_password}@${db_host}:${db_port}/${db_name}"
+      }
 %{ for key, value in environment_variables ~}
       ,{
         "name": "${key}",

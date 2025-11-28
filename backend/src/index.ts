@@ -59,5 +59,6 @@ app.get("/info", (_req: Request, res: Response) => {
 });
 
 app.listen(port, () => {
+  console.log("Testing environment variable:", process.env.TEXT);
   console.log(`API ready on http://localhost:${port}`);
 });

@@ -43,7 +43,7 @@ jobs:
           IMAGE_TAG="${{ steps.git-hash.outputs.hash }}"
 
           docker build \
-            -f apps/api/Dockerfile \
+            -f backend/Dockerfile \
             -t ${ECR_REPO}:${IMAGE_TAG} \
             .
 
