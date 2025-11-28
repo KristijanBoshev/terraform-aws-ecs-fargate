@@ -1,0 +1,99 @@
+name: Deploy Backend
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ECR:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.git-hash.outputs.hash }}
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      ECR_REPO: ${{ secrets.ECR_REPOSITORY_NAME }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Get Git hash
+        id: git-hash
+        run: echo "hash=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push to ECR
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ECR_URL="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}"
+          IMAGE_TAG="${{ steps.git-hash.outputs.hash }}"
+
+          docker build \
+            -f apps/api/Dockerfile \
+            -t ${ECR_REPO}:${IMAGE_TAG} \
+            .
+
+          docker tag ${ECR_REPO}:${IMAGE_TAG} ${ECR_URL}:${IMAGE_TAG}
+          docker push ${ECR_URL}:${IMAGE_TAG}
+
+          echo "Pushed image: ${ECR_URL}:${IMAGE_TAG}"
+
+  Terraform:
+    needs: ECR
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+      AWS_S3_BACKEND_BUCKET: ${{ secrets.AWS_S3_BACKEND_BUCKET }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download terraform.tfvars from S3
+        run: aws s3 cp s3://${{ secrets.AWS_S3_BACKEND_BUCKET }}/terraform.tfvars infra/terraform.tfvars
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@main
+        with:
+          terraform_version: latest
+
+      - name: Check Terraform Format
+        working-directory: infra
+        id: fmt
+        run: terraform fmt -check
+        continue-on-error: true
+
+      - name: Initialise Terraform
+        working-directory: infra
+        id: init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.AWS_S3_BACKEND_BUCKET }}" \
+            -backend-config="key=terraform.tfstate" \
+            -backend-config="region=${{ secrets.AWS_REGION }}"
+
+      - name: Validate Terraform
+        working-directory: infra
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Run Terraform Plan
+        working-directory: infra
+        id: plan
+        run: terraform plan -var="app_image_tag=${{ needs.ECR.outputs.image_tag }}" -no-color
+
+      - name: Run Terraform Apply
+        working-directory: infra
+        id: apply
+        run: terraform apply -var="app_image_tag=${{ needs.ECR.outputs.image_tag }}" -auto-approve -no-color

@@ -15,7 +15,7 @@ resource "aws_ecs_task_definition" "app" {
 
   container_definitions = templatefile("${path.module}/templates/pay_app.json.tpl", {
     container_name        = local.container_name
-    app_image             = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${aws_ecr_repository.app.name}:${var.app_image_tag}"
+    app_image             = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${data.aws_ecr_repository.app.name}:${var.app_image_tag}"
     app_port              = var.app_port
     fargate_cpu           = var.fargate_cpu
     fargate_memory        = var.fargate_memory
