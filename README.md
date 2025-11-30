@@ -100,41 +100,14 @@ terraform destroy
 - Entries render as K/V pairs inside the ECS task definition.
 - Store sensitive `.tfvars` files securely (`*.auto.tfvars`, Terraform Cloud workspace vars, or your CI secrets store).
 
-## Reference Demo Application (Optional Starter)
+## Sample Application Docs
 
-Use this only when you want a ready-made workload to smoke-test the infrastructure. Swap it out with your own app once the stack proves stable.
+An optional React + Express demo is included strictly for smoke-tests. Detailed setup/run instructions now live beside the code:
 
-### Backend (`backend/`)
+- `backend/README.md` – Express + Prisma API, local/dev workflows, Docker commands, and API reference.
+- `frontend/README.md` – React + Vite dashboard, environment expectations, and deployment guidance.
 
-```bash
-cd backend
-cp .env.example .env
-npm install
-npm run prisma:generate
-npm run prisma:migrate
-npm run dev
-npm run build
-```
-
-- Production runs start via `node dist/index.js` (the Dockerfile handles this).
-- Build/run locally to confirm:
-  ```bash
-  docker build -t sample-backend backend
-  docker run --env-file backend/.env -p 4000:4000 sample-backend
-  ```
-- Routes: `GET /health`, `GET /test`, `GET /history?limit=10`, `GET /info`.
-
-### Frontend (`frontend/`)
-
-```bash
-cd frontend
-cp .env.example .env
-npm install
-npm run dev
-npm run build
-```
-
-Set `VITE_API_BASE_URL` to your API origin. The Material UI dashboard exposes each backend endpoint plus a configurable `/history` fetcher.
+Feel free to delete these folders once you have your own workloads.
 
 ## Customization Paths
 

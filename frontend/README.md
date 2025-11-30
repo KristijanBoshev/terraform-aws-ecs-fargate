@@ -1,73 +1,50 @@
-# React + TypeScript + Vite
+# Frontend Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React + Vite + Material UI single-page dashboard that exercises each backend endpoint. Use it to validate the infrastructure quickly or as a reference when wiring your own SPA into the Terraform deployment pipeline.
 
-Currently, two official plugins are available:
+## Requirements
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Node.js 20+
+- npm
 
-## React Compiler
+## Quick Start
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd frontend
+cp .env.example .env      
+npm install
+npm run dev                
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Create a production build with:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build                  # emits assets into dist/
 ```
+
+Preview the optimized build locally:
+
+```bash
+npm run preview
+```
+
+## Available Scripts
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Vite dev server with React Fast Refresh. |
+| `npm run build` | Type-check and bundle into static assets. |
+| `npm run preview` | Serve `dist/` locally for smoke tests. |
+| `npm run lint` | Run ESLint using the supplied flat config. |
+
+
+## UI Behavior
+
+- Buttons for `/health`, `/test`, `/info`, and `/history` endpoints with inline response payloads.
+- Adjustable history limit (1-50) prior to calling `/history`.
+- Success/error states surfaced via Material UI alerts so you can debug at a glance.
+
+## Deployment Notes
+
+- `npm run build` places static files in `frontend/dist`. Terraform uploads these assets to the S3 bucket fronted by CloudFront (see `infra/cloudfront.tf` and `infra/s3.tf`).
+- The `deploy-frontend.yaml` GitHub Actions workflow syncs the `dist/` folder to S3 and invalidates CloudFront. Configure `AWS_FRONTEND_BUCKET`, `AWS_CLOUDFRONT_DISTRIBUTION_ID`, and `VITE_API_BASE_URL` secrets in CI before using it.
