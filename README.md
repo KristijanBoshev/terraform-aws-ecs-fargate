@@ -116,14 +116,5 @@ Feel free to delete these folders once you have your own workloads.
 - **Scaling policies:** Replace CPU-based step scaling with target tracking on custom metrics if you need tighter control.
 - **Multi-environment deployments:** Use Terraform workspaces or separate state files per environment.
 
-## Validation & Operations
-
-- `terraform fmt | validate | plan` – keep drift and formatting in check.
-- AWS Console/CLI – confirm ACM validation and CloudFront propagation when troubleshooting.
-- CloudWatch dashboards/alarms – ensure scaling signals fire before production cutover.
-
-## Security Considerations
-
-
 ---
 Need more adjustments (private networking, multi-account rollout, etc.)? Clone the repository and customize by your needs!
