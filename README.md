@@ -114,7 +114,6 @@ Feel free to delete these folders once you have your own workloads.
 - **Private networking:** Extend `network.tf` with private subnets + NAT, update ECS subnets, and create a dedicated RDS subnet group.
 - **Observability:** Add log subscription filters or extra IAM permissions in `logs.tf`/`roles.tf` to forward metrics.
 - **Scaling policies:** Replace CPU-based step scaling with target tracking on custom metrics if you need tighter control.
-- **Multi-environment deployments:** Use Terraform workspaces or separate state files per environment.
 
 ---
 Need more adjustments (private networking, multi-account rollout, etc.)? Clone the repository and customize by your needs!
