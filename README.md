@@ -2,7 +2,7 @@
 
 A Terraform-first blueprint for provisioning a production-style AWS stack that runs any containerized workload. The repo ships with a lightweight React + Vite + Node + Express sample so you can validate the infrastructure quickly, but the template itself is designed for your own services. Provide your own Application with Dockerfile and you are ready to go!
 
-> **Note:** The provided GitHub Actions assume this repository layout (`/backend`, `/frontend`, `/infra`, etc.); keep that structure or update the workflows before relying on CI/CD.
+> **Note:** The provided GitHub Actions assume this repository layout (`/backend`, `/frontend`, `/infra`, etc.); keep that structure or update the workflows before relying on CI/CD..
 
 
 ## Why This Template
