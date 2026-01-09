@@ -55,6 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       AWS_S3_BACKEND_BUCKET: ${{ secrets.AWS_S3_BACKEND_BUCKET }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
