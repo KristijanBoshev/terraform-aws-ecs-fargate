@@ -99,21 +99,6 @@ jobs:
         id: plan
         run: terraform plan -var="app_image_tag=${{ needs.ECR.outputs.image_tag }}" -no-color
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install backend dependencies
-        working-directory: backend
-        run: npm ci
-
-      - name: Run Prisma migrations
-        working-directory: backend
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: npx prisma migrate deploy
-
       - name: Run Terraform Apply
         working-directory: infra
         id: apply
